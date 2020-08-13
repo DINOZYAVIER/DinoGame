@@ -1,3 +1,4 @@
+#include <iostream>
 #include "Framework.h"
 #include "cstring"
 #include <stdlib.h>
@@ -42,7 +43,7 @@ class MyFramework : public Framework {
         }
     
         virtual void onKeyReleased(FRKey k) {
-        }
+	}
     
 private:
     int xres = 0;
@@ -52,7 +53,7 @@ private:
     int amount_of_bullets = 0;
     };
     
-bool paramCheck(int &xres, int &yres, int &mapsize, int &amount_of_enemies, int &amount_of_bullets,
+void paramCheck(int &xres, int &yres, int &mapsize, int &amount_of_enemies, int &amount_of_bullets,
                 int argc, char *argv[]);
 
 int main(int argc, char *argv[])
@@ -72,35 +73,39 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-bool paramCheck(int &xres, int &yres, int &mapsize, int &amount_of_enemies, int &amount_of_bullets,
+void paramCheck(int &xres, int &yres, int &mapsize, int &amount_of_enemies, int &amount_of_bullets,
                 int argc, char *argv[])
 {
-    for (int i = 1; i < argc; ++i)
-    {
-        if (strcmp(argv[i], "-window"))
-        {
-            char str[strlen(argv[i+1]) / 2];
+	for (int i = 0; i < argc; ++i)
+		std::cout << argv[i] << std::endl;
+
+	for (int i = 1; i < argc; ++i)
+   	{
+	       	if (strcmp(argv[i], "-window"))
+		{
+			char str[strlen(argv[++i]) / 2];
+		       	//here we obtain the x coord and convert from cstring to int
+	   		int j = 0;
+           		for ( ; argv[i][j] != 'x'; ++j)
+               			str[j] = argv[i][j];
+          		j++;
+			xres = atoi(str);
+			std::cout << str;
             
-            //here we obtain the x coord and convert from cstring to int
-            int j = 0;
-            for ( ; argv[i][j] != 'x'; ++j)
-                str[j] = argv[i][j];
-            j++;
-            xres = atoi(str);
+            		//here we clean str var from previous coord in case x and y have different places
+            		for (int k = 0; k < strlen(argv[i+1]) / 2; ++k)
+                		str[k] = '\0';
             
-            //here we clean str var from previous coord in case x and y have different places
-            for (int k = 0; k < strlen(argv[i+1]) / 2; ++k)
-                str[k] = '\0';
-            
-            //here we obtain y coord and convert from cstring to int
-            for (int k = 0; argv[i][j] != '\0'; ++j)
-                str[k] = argv[i][j];
-            yres = atoi(str);
-        }
-    }
-    
-    if(1440 < xres || 1600 < yres || mapsize > xres || mapsize > yres || 0 > mapsize || 0 > amount_of_bullets)
-        return true;
-    else
-        return false;
+            		//here we obtain y coord and convert from cstring to int
+            		for (int k = 0; argv[i][j] != '\0'; ++j)
+                		str[k] = argv[i][j];
+            		yres = atoi(str);
+        	}
+    	}
+	
+	if(1440 < xres || 1600 < yres || mapsize > xres || mapsize > yres || 0 > mapsize || 0 > amount_of_bullets)
+	{
+
+	}
+   
 }
