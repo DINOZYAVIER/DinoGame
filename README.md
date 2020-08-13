@@ -1,2 +1,0 @@
-# DinoGame
-Crimsonland-like game
