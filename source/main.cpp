@@ -10,9 +10,33 @@ const int default_amount_of_bullets = 3;
 
 class MyFramework : public Framework {
     public:
-    
-    MyFramework (int xres, int yres, int mapsize_x, int mapsize_y, int amount_of_enemies, int amount_of_bullets) :
-    xres(xres), yres(yres), mapsize_x(mapsize_x), mapsize_y(mapsize_y), amount_of_enemies(amount_of_enemies), amount_of_bullets(amount_of_bullets) {}
+
+    void ParamCheck (int argc, char *argv[]);
+
+    MyFramework (int argc, char *argv[])
+    {
+	ParamCheck(argc, argv);
+
+	if (xres >  max_x || yres > max_y)	
+	{
+		xres = max_x;
+		yres = max_y;
+	}
+
+	if (mapsize_x < xres || mapsize_y < yres)
+	{
+		mapsize_x = xres;
+		mapsize_y = yres;
+	}
+
+	if (amount_of_enemies < 0 || amount_of_bullets < 0)
+	{
+		amount_of_enemies = default_amount_of_enemies;
+		amount_of_bullets = default_amount_of_bullets;
+	}	
+    }
+
+
     
         virtual void PreInit(int& width, int& height, bool& fullscreen)
         {
@@ -59,28 +83,16 @@ private:
     int amount_of_bullets = 0;
     };
     
-void paramCheck(int &xres, int &yres, int &mapsize_x, int &mapsize_y, int &amount_of_enemies, int &amount_of_bullets,
-                int argc, char *argv[]);
 
 int main(int argc, char *argv[])
 {
-	int xres = 1440,
-        	yres = 720,
-        	mapsize_x  = 800,
-		mapsize_y = 800,
-        	amount_of_enemies = 0,
-        	amount_of_bullets = 0;
-
-        paramCheck(xres, yres, mapsize_x, mapsize_y, amount_of_enemies, amount_of_bullets, argc, argv);
-        
-    	MyFramework* gameFramework = new MyFramework(xres, yres, mapsize_x, mapsize_y, amount_of_enemies, amount_of_bullets);
+    	MyFramework* gameFramework = new MyFramework(argc, argv);
   
   	run(gameFramework);
 	return 0;
 }
 
-void paramCheck(int &xres, int &yres, int &mapsize_x, int &mapsize_y, int &amount_of_enemies, int &amount_of_bullets,
-                int argc, char *argv[])
+void MyFramework::ParamCheck(int argc, char *argv[])
 {
 	std::cout << argc << std::endl;
 	for (int i = 0; i < argc; ++i)
@@ -145,21 +157,5 @@ void paramCheck(int &xres, int &yres, int &mapsize_x, int &mapsize_y, int &amoun
 		
 	}
 
-	if (xres >  max_x || yres > max_y)	
-	{
-		xres = max_x;
-		yres = max_y;
-	}
 
-	if (mapsize_x < xres || mapsize_y < yres)
-	{
-		mapsize_x = xres;
-		mapsize_y = yres;
-	}
-
-	if (amount_of_enemies < 0 || amount_of_bullets < 0)
-	{
-		amount_of_enemies = default_amount_of_enemies;
-		amount_of_bullets = default_amount_of_bullets;
-	}	
 }
