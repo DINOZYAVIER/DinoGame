@@ -1,11 +1,11 @@
 IDIR = ./include
 LDIR = ./lib
-LIBS = -lFramework -lstdc++
+LIBS = -lFramework  -lstdc++ 
 CC = clang
 CFLAGS = -I$(IDIR) -L$(LDIR) --std=c++0x
 
 all: source/main.cpp
-	$(CC) source/main.cpp -o output/DinoGame $(CFLAGS) $(LIBS)
+	$(CC) source/main.cpp -o output/DinoGame.out $(CFLAGS) $(LIBS)
 
 
 
