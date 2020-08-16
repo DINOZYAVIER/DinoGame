@@ -3,13 +3,104 @@
 #include "cstring"
 #include <stdlib.h>
 
-const int max_x = 1600;
-const int max_y = 900;
+const int max_x = 1444;
+const int max_y = 1280;
 const int default_amount_of_enemies = 3;
 const int default_amount_of_bullets = 3;
+const int safe_margin = 150;
+
+const int PLAYER_SPRITE = 0;
+const int ENEMY_SPRITE = 1;
+const int BULLET_SPRITE = 2;
+const int BACKGROUND_SPRITE = 3;
 
 class MyFramework : public Framework {
-    public:
+
+public:
+	class Entities {
+	
+	public:
+		void SpriteInit()
+		{
+			spriteArray[PLAYER_SPRITE] = createSprite("/Users/dinozyavier/Desktop/godplease/data/steve.jpeg");
+			spriteArray[ENEMY_SPRITE] = createSprite("/Users/dinozyavier/Desktop/godplease/data/creeper.png");
+			spriteArray[BULLET_SPRITE] = createSprite("/Users/dinozyavier/Desktop/godplease/data/fire_charge.png");
+			spriteArray[BACKGROUND_SPRITE] = createSprite("/Users/dinozyavier/Desktop/godplease/data/background.png");
+
+
+			getSpriteSize(spriteArray[PLAYER_SPRITE], spriteSize[PLAYER_SPRITE][0], spriteSize[PLAYER_SPRITE][1]);
+			getSpriteSize(spriteArray[ENEMY_SPRITE], spriteSize[ENEMY_SPRITE][0], spriteSize[ENEMY_SPRITE][1]);
+			getSpriteSize(spriteArray[BULLET_SPRITE], spriteSize[BULLET_SPRITE][0], spriteSize[BULLET_SPRITE][1]);
+			getSpriteSize(spriteArray[BACKGROUND_SPRITE], spriteSize[BACKGROUND_SPRITE][0], spriteSize[BACKGROUND_SPRITE][1]);
+
+		}
+
+		Entities (MyFramework& fr) 
+		{
+
+			//array of enemies' positions
+			enemies_pos = new int* [fr.amount_of_enemies];
+			for (int i = 0; i < fr.amount_of_enemies; ++i)
+				enemies_pos[i] = new int [2];
+			
+			//array of bullets' positions
+			bullets_pos = new int* [fr.amount_of_bullets];
+			for (int i = 0; i < fr.amount_of_bullets; ++i)
+				enemies_pos[i] = new int [2];
+		}
+
+		void PositionFill(MyFramework& fr)
+		{
+
+			SpriteInit();
+	
+			//player's position
+			player_pos[0][0] = (fr.xres - spriteSize[PLAYER_SPRITE][0]) / 2;
+			player_pos[0][1] = (fr.yres - spriteSize[PLAYER_SPRITE][1]) / 2;
+
+			//here we fill enemies' position
+			for (int i = 0; i < fr.amount_of_enemies; ++i)
+			{
+				do {
+
+					enemies_pos[i][0] = rand() % (fr.mapsize_x - spriteSize[ENEMY_SPRITE][0]);
+					enemies_pos[i][1] = rand() % (fr.mapsize_y - spriteSize[ENEMY_SPRITE][1]);
+
+					if ((enemies_pos[i][0] < player_pos[0][0] && enemies_pos[i][0] < player_pos[0][0] - safe_margin)
+						       	|| (enemies_pos[i][0] > player_pos[0][0] && enemies_pos[i][0] > player_pos[0][0] + safe_margin)
+							|| (enemies_pos[i][1] < player_pos[0][1] && enemies_pos[i][1] < player_pos[0][1] - safe_margin)
+							|| (enemies_pos[i][1] > player_pos[0][1] && enemies_pos[i][1] > player_pos[0][1] + safe_margin))
+						break;
+					else
+						continue;
+
+				} while (1);
+			}
+		}
+
+
+		void DisplayEntities(MyFramework& fr)
+		{
+			drawSprite (spriteArray[PLAYER_SPRITE], player_pos[0][0], player_pos[0][1]);
+			for (int i = 0; i < fr.amount_of_enemies; ++i)
+				drawSprite(spriteArray[ENEMY_SPRITE], enemies_pos[i][0], enemies_pos[i][1]);
+		}
+
+		void makeBackground(MyFramework& fr) {
+
+			for (int i = 0; i < fr.mapsize_x; i += spriteSize[BACKGROUND_SPRITE][0])
+				for (int j = 0; j < fr.mapsize_y; j += spriteSize[BACKGROUND_SPRITE][1])
+					drawSprite(spriteArray[BACKGROUND_SPRITE], i, j);
+		}
+	private:
+		//here I try to implement data oriented design (structure of arrays instead of array of structures) 
+		int player_pos[1][2];
+		int **enemies_pos;
+		int **bullets_pos;
+		Sprite* spriteArray[4];
+		int spriteSize[4][2];
+
+	};
 
     void ParamCheck (int argc, char *argv[]);
 
@@ -33,20 +124,25 @@ class MyFramework : public Framework {
 	{
 		amount_of_enemies = default_amount_of_enemies;
 		amount_of_bullets = default_amount_of_bullets;
-	}	
+	}
+
+	ent = new Entities(*this);	
     }
 
 
     
-        virtual void PreInit(int& width, int& height, bool& fullscreen)
-        {
-            width = xres;
-            height = yres;
-            fullscreen = false;
+        virtual void PreInit(int& width, int& height, bool& fullscreen) {
+		
+        	width = xres;
+        	height = yres;
+        	fullscreen = false;
         }
     
         virtual bool Init() {
-            //createSprite("/Users/dinozyavier/Desktop/DinoGame/DinoGame/data");
+
+		ent->PositionFill(*this);
+		//ent->SpriteInit();
+
             return true;
         }
     
@@ -55,9 +151,9 @@ class MyFramework : public Framework {
         }
     
         virtual bool Tick() {
-            drawTestBackground();
-            drawSprite(createSprite("/Users/dinozyavier/Desktop/DinoGame/DinoGame/data/avatar.jpg"), 0, 0);
-            return false;
+		ent->makeBackground(*this);
+		ent->DisplayEntities(*this);
+            	return false;
         }
     
         virtual void onMouseMove(int x, int y, int xrelative, int yrelative) {
@@ -73,15 +169,31 @@ class MyFramework : public Framework {
     
         virtual void onKeyReleased(FRKey k) {
 	}
+
+
+
+
+	int get_xres() { return xres; }
+
+	int get_yres() { return xres; }
+
+	int get_mapsize_x() { return mapsize_x; }
+
+	int get_mapsize_y() { return mapsize_y; }
+
+	int get_amount_of_enemies() { return amount_of_enemies; }
+
+	int get_amount_of_bullets() { return amount_of_bullets; }
     
 private:
-    int xres = 0;
-    int yres = 0;
+    int xres = 800;
+    int yres = 600;
     int mapsize_x = 0;
     int mapsize_y = 0;
     int amount_of_enemies = 0;
     int amount_of_bullets = 0;
-    };
+    Entities *ent;
+};
     
 
 int main(int argc, char *argv[])
@@ -94,6 +206,7 @@ int main(int argc, char *argv[])
 
 void MyFramework::ParamCheck(int argc, char *argv[])
 {
+
 	std::cout << argc << std::endl;
 	for (int i = 0; i < argc; ++i)
 		std::cout << argv[i] << std::endl;
