@@ -36,5 +36,5 @@
 *.swo
 *.swn
 
-
+/output/
 .DS_Store
