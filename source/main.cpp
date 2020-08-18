@@ -16,6 +16,7 @@ const int BULLET_SPRITE = 2;
 const int BACKGROUND_SPRITE = 3;
 
 const int PLAYER_SPEED = 20;
+const int ENEMY_SPEED = 5;
 
 class MyFramework : public Framework {
 
@@ -46,12 +47,21 @@ public:
 			//array of enemies' positions
 			enemies_pos = new int* [fr.amount_of_enemies];
 			for (int i = 0; i < fr.amount_of_enemies; ++i)
+			{
 				enemies_pos[i] = new int [2];
+				enemies_pos[i][0] = 0;
+				enemies_pos[i][1] = 0;
+			}
 			
+
 			//array of bullets' positions
 			bullets_pos = new int* [fr.amount_of_bullets];
 			for (int i = 0; i < fr.amount_of_bullets; ++i)
-				enemies_pos[i] = new int [2];
+			{
+				bullets_pos[i] = new int [2];
+				bullets_pos[i][0] = 0;
+				bullets_pos[i][1] = 0;
+			}
 		}
 
 		~Entities() {
@@ -88,17 +98,16 @@ public:
 					enemies_pos[i][0] = rand() % (fr.mapsize_x - spriteSize[ENEMY_SPRITE][0]);
 					enemies_pos[i][1] = rand() % (fr.mapsize_y - spriteSize[ENEMY_SPRITE][1]);
 
-					if ((enemies_pos[i][0] < player_pos[0][0] && enemies_pos[i][0] < player_pos[0][0] - safe_margin)
+					if ((isFree(enemies_pos[i][0], enemies_pos[i][1], i)  && ((enemies_pos[i][0] < player_pos[0][0] && enemies_pos[i][0] < player_pos[0][0] - safe_margin)
 						       	|| (enemies_pos[i][0] > player_pos[0][0] && enemies_pos[i][0] > player_pos[0][0] + safe_margin)
 							|| (enemies_pos[i][1] < player_pos[0][1] && enemies_pos[i][1] < player_pos[0][1] - safe_margin)
-							|| (enemies_pos[i][1] > player_pos[0][1] && enemies_pos[i][1] > player_pos[0][1] + safe_margin))
+							|| (enemies_pos[i][1] > player_pos[0][1] && enemies_pos[i][1] > player_pos[0][1] + safe_margin))))
 						break;
 					else
 						continue;
-				} while (1);
+			} while (1);
 			}
 		}
-
 
 		void DisplayEntities(MyFramework& fr)
 		{
@@ -191,6 +200,68 @@ public:
 
 
 		}
+
+		void  enemyMove(MyFramework& fr) 
+		{
+			std::cout << "player x = " << player_pos[0][0] << " player y = " << player_pos[0][1];
+			for (int i = 0; i < enemies_quantity; ++i)
+			{
+				std::cout << "enemy number " << i << " x = " << enemies_pos[i][0] << ", y = " << enemies_pos[i][1] << std::endl;
+
+				if ((player_pos[0][0] > enemies_pos[i][0]) && !isOccupied(enemies_pos[i][0] + 1, enemies_pos[i][1], i))
+					++enemies_pos[i][0];
+				
+				if ((player_pos[0][0] < enemies_pos[i][0]) && !isOccupied(enemies_pos[i][0] - 1, enemies_pos[i][1], i))
+					--enemies_pos[i][0];
+
+				if ((player_pos[0][1] > enemies_pos[i][1]) && !isOccupied(enemies_pos[i][0], enemies_pos[i][1] + 1, i))
+					++enemies_pos[i][1];
+
+				if ((player_pos[0][1] < enemies_pos[i][1]) && !isOccupied(enemies_pos[i][0], enemies_pos[i][1] - 1, i))
+					--enemies_pos[i][1];
+
+				std::cout << "enemy number " << i << "x = " << enemies_pos[i][0] << ", y = " << enemies_pos[i][1] << std::endl;
+			}
+		}
+
+		bool isOccupied(int x, int y, int num)
+		{
+			if (x <= 0 && y <= 0)
+				return false;
+
+			for (int i = 0; i < enemies_quantity; ++i)
+			{
+				if ((((x >= enemies_pos[i][0] && x <= (enemies_pos[i][0] + spriteSize[ENEMY_SPRITE][0])) &&
+					       	(y >= enemies_pos[i][1] && y <= (enemies_pos[i][1] + spriteSize[ENEMY_SPRITE][1])))
+					        && (x + spriteSize[ENEMY_SPRITE][0] >= enemies_pos[i][0] && x <= enemies_pos[i][0])) 	
+					&& i != num) 
+				{
+					std::cout << "hello there" << std::endl;
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		bool isFree(int x, int y, int num)
+		{
+			for (int i = 0; i < num; ++i)
+			{
+
+				if (((( x >= enemies_pos[i][0] && x <= (enemies_pos[i][0] + spriteSize[ENEMY_SPRITE][0])) 
+						|| (x + spriteSize[ENEMY_SPRITE][0] >= enemies_pos[i][0] && (x <= enemies_pos[i][0])))
+					&& ((y >= enemies_pos[i][1] && y <= (enemies_pos[i][1] + spriteSize[ENEMY_SPRITE][1])) 
+						|| (y + spriteSize[ENEMY_SPRITE][1] >= enemies_pos[i][1] && 1 <= enemies_pos[i][1]))))
+				{
+					std::cout << "hello there neo" << std::endl;
+					return false;
+				}
+			}
+
+			return true;
+		}
+
 	private:
 		//here I try to implement data oriented design (structure of arrays instead of array of structures) 
 		int player_pos[1][2];
@@ -255,6 +326,8 @@ public:
     
         virtual bool Tick() {
 		ent->makeBackground(*this);
+		if(!(getTickCount() % 10))
+			ent->enemyMove(*this);
 		ent->DisplayEntities(*this);
             	return ShouldStop;
         }
@@ -264,7 +337,9 @@ public:
         }
     
         virtual void onMouseButtonClick(FRMouseButton button, bool isReleased) {
-    
+
+
+		ent->enemyMove(*this);
         }
     
         virtual void onKeyPressed(FRKey k) {
