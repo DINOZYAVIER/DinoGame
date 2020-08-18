@@ -2,6 +2,7 @@
 #include "Framework.h"
 #include "cstring"
 #include <stdlib.h>
+#include <math.h>
 
 const int max_x = 1444;
 const int max_y = 1280;
@@ -9,13 +10,16 @@ const int default_amount_of_enemies = 3;
 const int default_amount_of_bullets = 3;
 const int safe_margin = 150;
 
-const int AMOUNT_OF_SPRITES = 4;
+const int AMOUNT_OF_SPRITES = 6;
 const int PLAYER_SPRITE = 0;
 const int ENEMY_SPRITE = 1;
 const int BULLET_SPRITE = 2;
 const int BACKGROUND_SPRITE = 3;
+const int CROSSHAIR_SPRITE = 4;
 
 const int PLAYER_SPEED = 20;
+int ENEMY_SPEED = rand() % 10;
+const int BULLET_SPEED = 5;
 
 class MyFramework : public Framework {
 
@@ -29,12 +33,14 @@ public:
 			spriteArray[ENEMY_SPRITE] = createSprite("/Users/dinozyavier/Desktop/godplease/data/creeper.png");
 			spriteArray[BULLET_SPRITE] = createSprite("/Users/dinozyavier/Desktop/godplease/data/fire_charge.png");
 			spriteArray[BACKGROUND_SPRITE] = createSprite("/Users/dinozyavier/Desktop/godplease/data/background.png");
+			spriteArray[CROSSHAIR_SPRITE] = createSprite("/Users/dinozyavier/Desktop/godplease/data/crosshair.png");
 
 
 			getSpriteSize(spriteArray[PLAYER_SPRITE], spriteSize[PLAYER_SPRITE][0], spriteSize[PLAYER_SPRITE][1]);
 			getSpriteSize(spriteArray[ENEMY_SPRITE], spriteSize[ENEMY_SPRITE][0], spriteSize[ENEMY_SPRITE][1]);
 			getSpriteSize(spriteArray[BULLET_SPRITE], spriteSize[BULLET_SPRITE][0], spriteSize[BULLET_SPRITE][1]);
 			getSpriteSize(spriteArray[BACKGROUND_SPRITE], spriteSize[BACKGROUND_SPRITE][0], spriteSize[BACKGROUND_SPRITE][1]);
+			getSpriteSize(spriteArray[CROSSHAIR_SPRITE], spriteSize[CROSSHAIR_SPRITE][0], spriteSize[CROSSHAIR_SPRITE][1]);
 
 		}
 
@@ -42,7 +48,7 @@ public:
 		{			
 			enemies_quantity = fr.amount_of_enemies;
 			bullets_quantity = fr.amount_of_bullets;
-			enemySpeed = rand () % 10;
+			//enemySpeed = rand () % 10;
 			//array of enemies' positions
 			enemies_pos = new int* [fr.amount_of_enemies];
 			for (int i = 0; i < fr.amount_of_enemies; ++i)
@@ -54,13 +60,24 @@ public:
 			
 
 			//array of bullets' positions
-			bullets_pos = new int* [fr.amount_of_bullets];
+			bullets_pos = new float* [fr.amount_of_bullets];
 			for (int i = 0; i < fr.amount_of_bullets; ++i)
 			{
-				bullets_pos[i] = new int [2];
+				bullets_pos[i] = new float [2];
 				bullets_pos[i][0] = 0;
 				bullets_pos[i][1] = 0;
 			}
+
+			//array of bullets' directions
+			bullets_dir = new float* [fr.amount_of_bullets];
+			for (int i = 0; i < fr.amount_of_bullets; ++i)
+			{
+				bullets_dir[i] = new float [2];
+				bullets_dir[i][0] = 0;
+				bullets_dir[i][1] = 0;
+			}
+			
+			bullets_flag = new bool (fr.amount_of_bullets);
 		}
 
 		~Entities() {
@@ -72,6 +89,11 @@ public:
 			for (int i = 0; i < bullets_quantity; ++i)
 				delete [] bullets_pos[i];
 			delete [] bullets_pos;
+
+			for (int i = 0; i < bullets_quantity; ++i)
+				delete [] bullets_dir[i];
+			delete [] bullets_dir;
+
 
 		}
 		void PositionFill(MyFramework& fr)
@@ -120,6 +142,58 @@ public:
 			for (int i = 0; i < fr.mapsize_x; i += spriteSize[BACKGROUND_SPRITE][0])
 				for (int j = 0; j < fr.mapsize_y; j += spriteSize[BACKGROUND_SPRITE][1])
 					drawSprite(spriteArray[BACKGROUND_SPRITE], i, j);
+		}
+
+		void displayCrosshair()
+		{	
+			drawSprite(spriteArray[CROSSHAIR_SPRITE], crosshair_pos[0][0] - spriteSize[CROSSHAIR_SPRITE][0], crosshair_pos[0][1] - spriteSize[CROSSHAIR_SPRITE][1] / 2);
+		}
+
+		void displayBullets()
+		{
+			for (int i = 0; i < bullet_count; ++i)
+			{
+				if (bullets_flag[i])
+					drawSprite(spriteArray[BULLET_SPRITE], (int)bullets_pos[i][0], (int)bullets_pos[i][1]);
+			}
+		}
+
+		void playerShoot()
+		{
+			if (bullet_count == bullets_quantity)
+				bullet_count = 0;
+
+			bullets_flag[bullet_count] = true;
+
+			bullets_pos[bullet_count][0] = (float) player_pos[0][0];
+			bullets_pos[bullet_count][1] = (float) player_pos[0][1];
+			bullets_dir[bullet_count][0] = (float) (crosshair_pos[0][0] - bullets_pos[bullet_count][0]);
+			bullets_dir[bullet_count][1] = (float) (crosshair_pos[0][1] - bullets_pos[bullet_count][1]);
+
+			float length = sqrtf(bullets_dir[bullet_count][0] * bullets_dir[bullet_count][0] + bullets_dir[bullet_count][1] * bullets_dir[bullet_count][1]);
+			bullets_dir[bullet_count][0] /= length;
+			bullets_dir[bullet_count][1] /= length;
+
+			++bullet_count;
+
+		}
+
+		void bulletMove(MyFramework& fr)
+		{
+			for (int i = 0; i < bullet_count; ++i)
+			{
+				if (bullets_flag[i])
+				{
+					bullets_pos[i][0] = bullets_pos[i][0] + bullets_dir[i][0] * BULLET_SPEED;
+					bullets_pos[i][1] = bullets_pos[i][1] + bullets_dir[i][1] * BULLET_SPEED;
+					if (bullets_pos[i][0] < 0 || bullets_pos[i][0] > fr.mapsize_x || bullets_pos[i][1] < 0 || bullets_pos[i][1] > fr.mapsize_y)
+					{
+
+						bullets_flag[i] = false;
+					}
+				}
+			}
+
 		}
 
 		void playerMove (MyFramework& fr, FRKey k) {
@@ -202,10 +276,8 @@ public:
 
 		void  enemyMove(MyFramework& fr) 
 		{
-			std::cout << "player x = " << player_pos[0][0] << " player y = " << player_pos[0][1];
 			for (int i = 0; i < enemies_quantity; ++i)
 			{
-				std::cout << "enemy number " << i << " x = " << enemies_pos[i][0] << ", y = " << enemies_pos[i][1] << std::endl;
 
 				if ((player_pos[0][0] > enemies_pos[i][0]) && !isOccupied(enemies_pos[i][0] + 1, enemies_pos[i][1], enemies_quantity, i))
 					++enemies_pos[i][0];
@@ -219,7 +291,6 @@ public:
 				if ((player_pos[0][1] < enemies_pos[i][1]) && !isOccupied(enemies_pos[i][0], enemies_pos[i][1] - 1, enemies_quantity, i))
 					--enemies_pos[i][1];
 
-				std::cout << "enemy number " << i << "x = " << enemies_pos[i][0] << ", y = " << enemies_pos[i][1] << std::endl;
 			}
 		}
 
@@ -233,7 +304,6 @@ public:
 					&& ((y >= enemies_pos[i][1] && y <= (enemies_pos[i][1] + spriteSize[ENEMY_SPRITE][1])) 
 						|| (y + spriteSize[ENEMY_SPRITE][1] >= enemies_pos[i][1] && y <= enemies_pos[i][1]))) && i != limit)
 				{
-					std::cout << "hello there neo" << std::endl;
 					return true;
 				}
 			}
@@ -259,13 +329,64 @@ public:
 			return false;
 		}
 
-		int getEnemySpeed()  { return enemySpeed; }
+		void isShot(MyFramework& fr)
+		{
+			for (int i = 0; i < bullet_count; ++i)
+			{
+				if (!bullets_flag[i])
+					continue;
+				for (int j = 0; j < enemies_quantity; ++j)
+				{
+					if (((( bullets_pos[i][0] >= enemies_pos[j][0] && bullets_pos[i][0] <= (enemies_pos[j][0] + spriteSize[ENEMY_SPRITE][0])) 
+						|| (bullets_pos[i][0]  + spriteSize[BULLET_SPRITE][0] >= enemies_pos[j][0] 
+							&& (bullets_pos[i][0] + spriteSize[BULLET_SPRITE][0]  <= enemies_pos[j][0] + spriteSize[ENEMY_SPRITE][0] )))
+					&& ((bullets_pos[i][1] >= enemies_pos[j][1] && bullets_pos[i][1] <= (enemies_pos[j][1] + spriteSize[ENEMY_SPRITE][1])) 
+						|| (bullets_pos[i][1] + spriteSize[BULLET_SPRITE][1] >= enemies_pos[j][1] 
+							&& bullets_pos[i][1] + spriteSize[BULLET_SPRITE][1] <= enemies_pos[j][1] + spriteSize[ENEMY_SPRITE][1]))))
+					{
+						bullets_flag[i] = false;
+						do {
+
+							enemies_pos[j][0] = rand() % (fr.mapsize_x - spriteSize[ENEMY_SPRITE][0]);
+							enemies_pos[j][1] = rand() % (fr.mapsize_y - spriteSize[ENEMY_SPRITE][1]);
+
+							if ((!isOccupied(enemies_pos[j][0], enemies_pos[j][1], j, j) 
+									       	&& ((enemies_pos[j][0] < player_pos[0][0]
+										&& enemies_pos[j][0] < player_pos[0][0] - safe_margin)
+						       	|| (enemies_pos[j][0] > player_pos[0][0] && enemies_pos[j][0] > player_pos[0][0] + safe_margin)
+							|| (enemies_pos[j][1] < player_pos[0][1] && enemies_pos[j][1] < player_pos[0][1] - safe_margin)
+							|| (enemies_pos[j][1] > player_pos[0][1] && enemies_pos[j][1] > player_pos[0][1] + safe_margin))))
+						break;
+					else
+						continue;
+			} while (1);
+					}
+
+				}
+			}
+		}
+
+	//	int getEnemySpeed()  { return enemySpeed; }
+
+		int* getCrosshairSpriteSize() { return spriteSize[CROSSHAIR_SPRITE]; }
+
+		void setCrosshairPos(int x, int y, int xrelative, int yrelative) 
+		{ 
+			crosshair_pos[0][0] = x;
+			crosshair_pos[0][1] = y;
+			crosshair_pos[1][0] = xrelative;
+			crosshair_pos[1][1] = yrelative;
+	       	}
 
 	private:
 		//here I try to implement data oriented design (structure of arrays instead of array of structures) 
 		int player_pos[1][2];
+		int crosshair_pos[2][2];
 		int **enemies_pos;
-		int **bullets_pos;
+		float **bullets_pos;
+		float **bullets_dir;
+		bool *bullets_flag;
+		int bullet_count = 0;
 		Sprite* spriteArray[AMOUNT_OF_SPRITES];
 		int spriteSize[AMOUNT_OF_SPRITES][2];
 		int dx;
@@ -274,7 +395,7 @@ public:
 		int ylimit;
 		int enemies_quantity;
 		int bullets_quantity;
-		int enemySpeed;
+	//	int enemySpeed;
 		bool moveFlag[4];
 	};
 
@@ -321,7 +442,7 @@ public:
         }
     
         virtual bool Init() {
-
+		showCursor(false);
 		ent->PositionFill(*this);
             	return true;
         }
@@ -332,21 +453,26 @@ public:
     
         virtual bool Tick() {
 		ent->makeBackground(*this);
-		if(!(getTickCount() % (5 * ent->getEnemySpeed())))
+		if(!(getTickCount() % ENEMY_SPEED))
 			ent->enemyMove(*this);
+		ent->bulletMove(*this);
+		ent->isShot(*this);
 		ent->DisplayEntities(*this);
-		ShouldStop = ent->isDead();
+		ent->displayBullets();
+		ent->displayCrosshair();
+	//	ShouldStop = ent->isDead();
             	return ShouldStop;
         }
     
         virtual void onMouseMove(int x, int y, int xrelative, int yrelative) {
 
-        }
-    
+		ent->setCrosshairPos(x, y, xrelative, yrelative);
+	}	
         virtual void onMouseButtonClick(FRMouseButton button, bool isReleased) {
 
-
-		ent->enemyMove(*this);
+		if (button == FRMouseButton::LEFT && isReleased)
+			ent->playerShoot();
+	//	ent->enemyMove(*this);
         }
     
         virtual void onKeyPressed(FRKey k) {
@@ -388,7 +514,7 @@ private:
 
 int main(int argc, char *argv[])
 {
-	while (1)
+//	while (1)
 	{
     		MyFramework* gameFramework = new MyFramework(argc, argv);
   		run(gameFramework);
