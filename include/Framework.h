@@ -51,6 +51,8 @@ enum class FRMouseButton {
 	COUNT
 };
 
+
+
 class FRAMEWORK_API Framework {
 public:
 
@@ -77,7 +79,6 @@ public:
 
 	virtual ~Framework() {};
 };
-
 
 FRAMEWORK_API int run(Framework*);
 
