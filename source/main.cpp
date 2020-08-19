@@ -10,7 +10,7 @@ const int default_amount_of_enemies = 3;
 const int default_amount_of_bullets = 3;
 const int safe_margin = 150;
 
-const int AMOUNT_OF_SPRITES = 6;
+const int AMOUNT_OF_SPRITES = 5;
 const int PLAYER_SPRITE = 0;
 const int ENEMY_SPRITE = 1;
 const int BULLET_SPRITE = 2;
@@ -42,6 +42,14 @@ public:
 			getSpriteSize(spriteArray[BACKGROUND_SPRITE], spriteSize[BACKGROUND_SPRITE][0], spriteSize[BACKGROUND_SPRITE][1]);
 			getSpriteSize(spriteArray[CROSSHAIR_SPRITE], spriteSize[CROSSHAIR_SPRITE][0], spriteSize[CROSSHAIR_SPRITE][1]);
 
+		}
+
+		void SpriteDestroy()
+		{
+			for (int i = 0; i < AMOUNT_OF_SPRITES; ++i)
+				destroySprite(spriteArray[i]);
+
+			
 		}
 
 		Entities (int enemies, int bullets, int map_x, int map_y)
@@ -79,7 +87,7 @@ public:
 				bullets_dir[i][1] = 0;
 			}
 			
-			bullets_flag = new bool (bullets_quantity);
+			bullets_flag = new bool [bullets_quantity];
 			for (int i = 0; i < bullets_quantity; ++i)
 				bullets_flag[i] = false;
 		}
@@ -101,20 +109,20 @@ public:
 			delete [] bullets_flag;
 
 		}
-		void PositionFill(MyFramework& fr)
+		void PositionFill(int xres, int yres)
 		{
 
 			SpriteInit();
 	
 			//player's position
-			player_pos[0][0] = (fr.xres - spriteSize[PLAYER_SPRITE][0]) / 2;
-			player_pos[0][1] = (fr.yres - spriteSize[PLAYER_SPRITE][1]) / 2;
+			player_pos[0][0] = (xres - spriteSize[PLAYER_SPRITE][0]) / 2;
+			player_pos[0][1] = (yres - spriteSize[PLAYER_SPRITE][1]) / 2;
 
 			dx = 0;
 			dy = 0;
 
-			xlimit = (mapsize_x - fr.xres) / 2;
-			ylimit = (mapsize_y - fr.yres) / 2;
+			xlimit = (mapsize_x - xres) / 2;
+			ylimit = (mapsize_y - yres) / 2;
 
 			//here we fill enemies' position
 			for (int i = 0; i < enemies_quantity; ++i)
@@ -408,15 +416,12 @@ public:
     MyFramework (int argc, char *argv[])
     {
 	ParamCheck(argc, argv);
-
-
-
-//	ent = new Entities(*this);
     }
 
     ~MyFramework()
     {
-	delete ent; 
+	    ent->SpriteDestroy();
+	    delete ent;
     }
 
 
@@ -430,16 +435,17 @@ public:
         }
     
         virtual bool Init() {
+
 		showCursor(false);
-		ent->PositionFill(*this);
+		ent->PositionFill(get_xres(), get_yres());
             	return true;
         }
     
         virtual void Close() {
-
         }
     
         virtual bool Tick() {
+
 		ent->makeBackground(*this);
 		if(!(getTickCount() % ENEMY_SPEED))
 			ent->enemyMove(*this);
@@ -448,7 +454,7 @@ public:
 		ent->DisplayEntities(*this);
 		ent->displayBullets();
 		ent->displayCrosshair();
-	//	ShouldStop = ent->isDead();
+		ShouldStop = ent->isDead();
             	return ShouldStop;
         }
     
@@ -456,6 +462,7 @@ public:
 
 		ent->setCrosshairPos(x, y, xrelative, yrelative);
 	}	
+
         virtual void onMouseButtonClick(FRMouseButton button, bool isReleased) {
 
 		if (button == FRMouseButton::LEFT && isReleased)
@@ -465,19 +472,17 @@ public:
         virtual void onKeyPressed(FRKey k) {
 
 		ent->playerMove(*this, k);
-			
 	}
     
         virtual void onKeyReleased(FRKey k) {
+
 	}
-
-
-
-
 
 	int get_xres() { return xres; }
 
 	int get_yres() { return xres; }
+
+	bool getShouldStop() { return ShouldStop; }
 
 private:
     int xres = 800;
@@ -489,12 +494,13 @@ private:
 
 int main(int argc, char *argv[])
 {
-//	while (1)
-	{
-    		MyFramework* gameFramework = new MyFramework(argc, argv);
+	MyFramework* gameFramework = new MyFramework(argc, argv);
+	do {
   		run(gameFramework);
-		delete gameFramework;
-	}
+
+	} while (gameFramework->getShouldStop());
+	delete gameFramework;
+
 	return 0;
 }
 
@@ -504,9 +510,6 @@ void MyFramework::ParamCheck(int argc, char *argv[])
 	    bullets = 0,
 	    map_x = 0,
 	    map_y = 0;
-	std::cout << argc << std::endl;
-	for (int i = 0; i < argc; ++i)
-		std::cout << argv[i] << std::endl;
 
 	for (int i = 1; i < argc; ++i)
    	{
